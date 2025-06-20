@@ -1,8 +1,8 @@
 <?php
 
-namespace application\services\bpm;
+namespace Bpm\Services;
 
-use \engine\Service;
+use SplitPHP\Service;
 
 class Workflow extends Service
 {

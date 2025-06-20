@@ -1,10 +1,10 @@
 <?php
 
-namespace application\services\bpm;
+namespace Bpm\Services;
 
 use Exception;
-use \engine\Service;
-use \engine\Dao;
+use SplitPHP\Service;
+use SplitPHP\Dao;
 
 class Wizard extends Service
 {

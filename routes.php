@@ -1,8 +1,8 @@
 <?php
 
-namespace application\routes\api;
+namespace Bpm\Routes;
 
-use \engine\WebService;
+use SplitPHP\WebService;
 
 class Bpm extends WebService
 {
