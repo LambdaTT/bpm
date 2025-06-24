@@ -1,6 +1,6 @@
 <?php
 
-namespace Bpm\Migrations;
+namespace BPM\Migrations;
 
 use SplitPHP\DbMigrations\Migration;
 use SplitPHP\Database\DbVocab;

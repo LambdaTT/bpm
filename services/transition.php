@@ -1,6 +1,6 @@
 <?php
 
-namespace Bpm\Services;
+namespace BPM\Services;
 
 use SplitPHP\Service;
 
@@ -11,7 +11,16 @@ class Transition extends Service
   {
     return $this->getDao('BPM_TRANSITION')
       ->bindParams($params)
-      ->find();
+      ->find(
+        "SELECT 
+            trn.*, 
+            stpo.ds_title AS stepOrigin,
+            stpd.ds_title AS stepDestination
+          FROM BPM_TRANSITION trn
+          LEFT JOIN BPM_STEP stpo ON stpo.id_bpm_step = trn.id_bpm_step_origin
+          LEFT JOIN BPM_STEP stpd ON stpd.id_bpm_step = trn.id_bpm_step_destination
+        "
+      );
   }
 
   public function get($params = [])

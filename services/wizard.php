@@ -1,50 +1,54 @@
 <?php
 
-namespace Bpm\Services;
+namespace BPM\Services;
 
 use Exception;
 use SplitPHP\Service;
-use SplitPHP\Dao;
+use SplitPHP\Database\Dao;
 
 class Wizard extends Service
 {
   public function availableTransitions($executionKey)
   {
-
     //Identifica a Etapa da execução atual usando executionKey:
-    $execution = $this->getDao('BPM_EXECUTION')->filter('ds_key')->equalsTo($executionKey)->first();
+    $execution = $this->getDao('BPM_EXECUTION')
+      ->filter('ds_key')->equalsTo($executionKey)
+      ->first();
+
+    if (empty($execution)) {
+      throw new Exception("It was not possible to find the execution with the provided key");
+    }
 
     $currentStep = $this->getService('bpm/step')->get(['id_bpm_step' => $execution->id_bpm_step_current]);
     if ($currentStep->do_is_terminal == 'Y') return [];
 
-    if (empty($execution)) {
-      throw new Exception("Não foi possível encontrar a execução com a chave fornecida", VALIDATION_FAILED);
-    }
-
-    $query = "SELECT*
-        FROM `BPM_TRANSITION`
-        WHERE (id_step_origin = ?id_bpm_step_current? OR id_step_origin IS NULL)
-        AND id_bpm_workflow = ?id_bpm_workflow?
-        ";
-
     return $this->getDao('BPM_TRANSITION')
-      ->filter('id_bpm_step_current')
-      ->equalsTo($execution->id_bpm_step_current)
-      ->and('id_bpm_workflow')
-      ->equalsTo($execution->id_bpm_workflow)
-      ->find($query);
+      ->filter('id_bpm_step_current')->equalsTo($execution->id_bpm_step_current)
+      ->and('id_bpm_workflow')->equalsTo($execution->id_bpm_workflow)
+      ->find(
+        "SELECT *
+          FROM `BPM_TRANSITION`
+          WHERE (id_step_origin = ?id_bpm_step_current? OR id_step_origin IS NULL)
+          AND id_bpm_workflow = ?id_bpm_workflow?
+        "
+      );
   }
 
   public function startWorkflow($workflowTag, $referenceEntityID)
   {
     //Capta as informações do Workflow:
-    $workflow = $this->getDao('BPM_WORKFLOW')->filter('ds_tag')->equalsTo($workflowTag)->first();
-    $workflowId = $workflow->id_bpm_workflow;
+    $workflow = $this->getDao('BPM_WORKFLOW')
+      ->filter('ds_tag')->equalsTo($workflowTag)
+      ->first();
+
+    if (empty($workflow)) {
+      throw new Exception("There's no workflow with the tag: " . $workflowTag);
+    }
 
     $loggedUser = $this->getService('iam/session')->getLoggedUser();
 
     //Inicia um novo Workflow (execution) baseado no ID e preenche suas informações:
-    $data['id_bpm_workflow'] = $workflowId;
+    $data['id_bpm_workflow'] = $workflow->id_bpm_workflow;
     $data['ds_key'] = 'exe-' . uniqid();
     $data['id_iam_user_created'] = $loggedUser ? $loggedUser->id_iam_user : null;
     $data['ds_reference_entity_name'] = $workflow->ds_reference_entity_name;
@@ -53,7 +57,7 @@ class Wizard extends Service
     //Preciso fazer a chamada de updExecStep depois disso pq ela usa a entidade criada aqui.
     $newExec = $this->getDao('BPM_EXECUTION')->insert($data);
 
-    Dao::dbCommitChanges();
+    Dao::flush();
 
     //Chama a função updExecutionStep para dar o primeiro passo:
     $newExec->id_bpm_step_current = $this->updExecutionStep($data['ds_key'])->id_bpm_step;
@@ -64,11 +68,14 @@ class Wizard extends Service
 
   public function transition($executionKey, $transitionKey)
   {
-
     //Pegando as informações necessárias:
     $transition = $this->getService('bpm/transition')->get(['ds_key' => $transitionKey]);
-    $execution = $this->getDao('BPM_EXECUTION')->filter('ds_key')->equalsTo($executionKey)->first();
-    $workflowSteps = $this->getDao('BPM_STEP')->filter('id_bpm_workflow')->equalsTo($execution->id_bpm_workflow)->find();
+    $execution = $this->getDao('BPM_EXECUTION')
+      ->filter('ds_key')->equalsTo($executionKey)
+      ->first();
+    $workflowSteps = $this->getDao('BPM_STEP')
+      ->filter('id_bpm_workflow')->equalsTo($execution->id_bpm_workflow)
+      ->find();
 
 
     //Verificação Step Origin
@@ -109,18 +116,31 @@ class Wizard extends Service
   {
 
     //Pegando informações necessárias:
-    $execution = $this->getDao('BPM_EXECUTION')->filter('ds_key')->equalsTo($executionKey)->first();
+    $execution = $this->getDao('BPM_EXECUTION')
+      ->filter('ds_key')->equalsTo($executionKey)
+      ->first();
     $workflowId = $execution->id_bpm_workflow;
-    $currentStep = $this->getDao('BPM_STEP')->filter('id_bpm_step')->equalsTo($execution->id_bpm_step_current)->and('id_bpm_workflow')->equalsTo($workflowId)->first();
+    $currentStep = $this->getDao('BPM_STEP')
+      ->filter('id_bpm_step')->equalsTo($execution->id_bpm_step_current)
+      ->and('id_bpm_workflow')->equalsTo($workflowId)
+      ->first();
     $newStep = null;
 
 
     //Verificar se o Novo step é nulo e caso seja, atribuir o ID do primeiro step do workflow a ele:
     if ($newStepId == null) {
-      $newStep = $this->getDao('BPM_STEP')->bindParams(['id_bpm_workflow' => $workflowId, '$sort_by' => 'nr_step_order'])->first();
+      $newStep = $this->getDao('BPM_STEP')
+        ->bindParams([
+          'id_bpm_workflow' => $workflowId,
+          '$sort_by' => 'nr_step_order'
+        ])
+        ->first();
       $newStepId = $newStep->id_bpm_step;
     } else {
-      $newStep = $this->getDao('BPM_STEP')->filter('id_bpm_step')->equalsTo($newStepId)->and('id_bpm_workflow')->equalsTo($workflowId)->first();
+      $newStep = $this->getDao('BPM_STEP')
+        ->filter('id_bpm_step')->equalsTo($newStepId)
+        ->and('id_bpm_workflow')->equalsTo($workflowId)
+        ->first();
     }
 
     // Executa as regras de saída (tx_out_rules):
@@ -129,11 +149,13 @@ class Wizard extends Service
     }
     $loggedUser = $this->getService('iam/session')->getLoggedUser();
     //Atualiza o step atual para o ID do step novo:
-    $this->getDao('BPM_EXECUTION')->filter('ds_key')->equalsTo($executionKey)->update([
-      'id_iam_user_updated' => $loggedUser ? $loggedUser->id_iam_user : null,
-      'dt_updated' => date('Y-m-d H:i:s'),
-      'id_bpm_step_current' => $newStepId,
-    ]);
+    $this->getDao('BPM_EXECUTION')
+      ->filter('ds_key')->equalsTo($executionKey)
+      ->update([
+        'id_iam_user_updated' => $loggedUser ? $loggedUser->id_iam_user : null,
+        'dt_updated' => date('Y-m-d H:i:s'),
+        'id_bpm_step_current' => $newStepId,
+      ]);
 
     //Atualiza o Tracking de Steps:
     $this->getService('bpm/step')->track($execution->id_bpm_execution, $newStepId);

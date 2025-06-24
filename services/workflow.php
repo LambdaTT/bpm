@@ -1,6 +1,6 @@
 <?php
 
-namespace Bpm\Services;
+namespace BPM\Services;
 
 use SplitPHP\Service;
 

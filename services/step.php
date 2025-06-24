@@ -1,12 +1,11 @@
 <?php
 
-namespace Bpm\Services;
+namespace BPM\Services;
 
 use SplitPHP\Service;
 
 class Step extends Service
 {
-
   public function list($params = [])
   {
     return $this->getDao('BPM_STEP')
@@ -37,7 +36,6 @@ class Step extends Service
 
   public function track($executionId, $stepId)
   {
-
     $data['id_bpm_execution'] = $executionId;
     $data['id_bpm_step'] = $stepId;
 
