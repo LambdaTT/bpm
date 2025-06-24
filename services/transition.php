@@ -15,10 +15,12 @@ class Transition extends Service
         "SELECT 
             trn.*, 
             stpo.ds_title AS stepOrigin,
-            stpd.ds_title AS stepDestination
-          FROM BPM_TRANSITION trn
-          LEFT JOIN BPM_STEP stpo ON stpo.id_bpm_step = trn.id_bpm_step_origin
-          LEFT JOIN BPM_STEP stpd ON stpd.id_bpm_step = trn.id_bpm_step_destination
+            stpd.ds_title AS stepDestination,
+            wfl.ds_title AS workflowTitle
+          FROM `BPM_TRANSITION` trn
+          LEFT JOIN `BPM_WORKFLOW` wfl ON wfl.id_bpm_workflow = trn.id_bpm_workflow
+          LEFT JOIN `BPM_STEP` stpo ON stpo.id_bpm_step = trn.id_bpm_step_origin
+          LEFT JOIN `BPM_STEP` stpd ON stpd.id_bpm_step = trn.id_bpm_step_destination
         "
       );
   }

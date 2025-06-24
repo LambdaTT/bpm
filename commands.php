@@ -56,6 +56,7 @@ class Commands extends Cli
         // Fetch & render
         $params = array_merge($args, [
           '$limit' => $limit,
+          '$limit_multiplier' => 1, // No multiplier for pagination
           '$page'  => $page,
         ]);
         if ($sortBy) {
@@ -254,6 +255,7 @@ class Commands extends Cli
         // Fetch & render
         $params = array_merge($args, [
           '$limit' => $limit,
+          '$limit_multiplier' => 1, // No multiplier for pagination
           '$page'  => $page,
         ]);
         if ($sortBy) {
@@ -274,6 +276,7 @@ class Commands extends Cli
             'nr_step_order'            => 'Order',
             'do_is_terminal'           => 'Is Terminal',
             'ds_tag'                   => 'Tag',
+            'workflowTitle'            => 'Workflow',
           ]);
         }
 
@@ -408,6 +411,7 @@ class Commands extends Cli
         // Fetch & render
         $params = array_merge($args, [
           '$limit' => $limit,
+          '$limit_multiplier' => 1, // No multiplier for pagination
           '$page'  => $page,
         ]);
         if ($sortBy) {
@@ -428,6 +432,7 @@ class Commands extends Cli
             'ds_icon'                   => 'Icon',
             'stepOrigin'                => 'Step Origin',
             'stepDestination'           => 'Step Destination',
+            'workflowTitle'            => 'Workflow',
           ]);
         }
 
@@ -519,7 +524,7 @@ class Commands extends Cli
       /** @var \Utils\Services\CliHelper $helper */
       $helper = $this->getService('utils/clihelper');
       Utils::printLn($helper->ansi(strtoupper("Welcome to the BPM Help Center!"), 'color: magenta; font-weight: bold'));
-      
+
       // 1) Define metadata for each command
       $commands = [
         'workflows:list'   => [

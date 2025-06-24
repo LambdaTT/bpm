@@ -10,7 +10,13 @@ class Step extends Service
   {
     return $this->getDao('BPM_STEP')
       ->bindParams($params)
-      ->find();
+      ->find(
+        "SELECT 
+            stp.*, 
+            wfl.ds_title AS workflowTitle
+          FROM `BPM_STEP` stp
+          LEFT JOIN `BPM_WORKFLOW` wfl ON wfl.id_bpm_workflow = stp.id_bpm_workflow"
+      );
   }
 
   public function get($params = [])
@@ -21,7 +27,7 @@ class Step extends Service
   }
 
   public function trackRecord($params)
-  {   
+  {
     return $this->getDao('BPM_STEP_TRACKING')
       ->bindParams($params)
       ->find(
