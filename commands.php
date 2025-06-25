@@ -11,123 +11,20 @@ class Commands extends Cli
   public function init()
   {
     $this->addCommand('workflows:list', function (array $args) {
-      // Base hints
-      $helper     = $this->getService('utils/clihelper');
-      $workflowSvc = $this->getService('bpm/workflow');
+      $getRows = function ($params) {
+        return $this->getService('bpm/workflow')->list($params);
+      };
 
-      // Extract and normalize our options
-      $limit   = isset($args['--limit']) ? (int)$args['--limit'] : 10;
-      $sortBy  = $args['--sort-by']         ?? null;
-      $sortDir = $args['--sort-direction']  ?? 'ASC';
-      unset($args['--limit'], $args['--sort-by'], $args['--sort-direction']);
+      $columns = [
+        'id_bpm_workflow'          => 'ID',
+        'ds_title'                 => 'Title',
+        'ds_reference_entity_name' => 'Reference',
+        'ds_tag'                   => 'Tag',
+        'dt_created'               => 'Created At',
+        'do_active'                => 'Active',
+      ];
 
-      $page = isset($args['--page']) ? (int)$args['--page'] : 1;
-      unset($args['--page']);
-
-      // --- <== HERE: open STDIN in BLOCKING mode (no stream_set_blocking) ===>
-      $stdin = fopen('php://stdin', 'r');
-      // on *nix, disable line buffering & echo
-      if (DIRECTORY_SEPARATOR !== '\\') {
-        system('stty -icanon -echo');
-      }
-
-      $exit = false;
-      while (! $exit) {
-        // Clear screen + move cursor home
-        if (DIRECTORY_SEPARATOR === '\\') {
-          system('cls');
-        } else {
-          echo "\033[2J\033[H";
-        }
-
-        // Header & hints
-        Utils::printLn($helper->ansi("Welcome to the BPM Workflow List Command!\n", 'color: cyan; font-weight: bold'));
-        Utils::printLn("HINTS:");
-        Utils::printLn("  • --limit={$limit}   (items/page)");
-        Utils::printLn("  • --sort-by={$sortBy}   --sort-direction={$sortDir}");
-        if (DIRECTORY_SEPARATOR === '\\') {
-          Utils::printLn("  • Press 'n' = next page, 'p' = previous page, 'q' = quit");
-        } else {
-          Utils::printLn("  • ←/→ arrows to navigate pages, 'q' to quit");
-        }
-        Utils::printLn("  • Press 'ctrl+c' to exit at any time");
-        Utils::printLn();
-
-        // Fetch & render
-        $params = array_merge($args, [
-          '$limit' => $limit,
-          '$limit_multiplier' => 1, // No multiplier for pagination
-          '$page'  => $page,
-        ]);
-        if ($sortBy) {
-          $params['$sort_by']        = $sortBy;
-          $params['$sort_direction'] = $sortDir;
-        }
-
-        $rows = $workflowSvc->list($params);
-
-        if (empty($rows)) {
-          Utils::printLn("  >> No workflows found on page {$page}.");
-        } else {
-          Utils::printLn(" Page {$page} — showing " . count($rows) . " items");
-          Utils::printLn(str_repeat('─', 60));
-          $helper->table($rows, [
-            'id_bpm_workflow'          => 'ID',
-            'ds_title'                 => 'Title',
-            'ds_reference_entity_name' => 'Reference',
-            'ds_tag'                   => 'Tag',
-            'dt_created'               => 'Created At',
-            'do_active'                => 'Active',
-          ]);
-        }
-
-        // --- <== HERE: wait for exactly one keypress, blocking until you press ===>
-        $c = fgetc($stdin);
-        if (DIRECTORY_SEPARATOR === '\\') {
-          $input = strtolower($c);
-        } else {
-          if ($c === "\033") {             // arrow keys start with ESC
-            $input = $c . fgetc($stdin) . fgetc($stdin);
-          } else {
-            $input = $c;
-          }
-        }
-
-        // Handle navigation
-        if (DIRECTORY_SEPARATOR === '\\') {
-          switch ($input) {
-            case 'n':
-              $page++;
-              break;
-            case 'p':
-              $page = max(1, $page - 1);
-              break;
-            case 'q':
-              $exit = true;
-              break;
-          }
-        } else {
-          switch ($input) {
-            case "\033[C": // →
-              $page++;
-              break;
-            case "\033[D": // ←
-              $page = max(1, $page - 1);
-              break;
-            case 'q':
-              $exit = true;
-              break;
-          }
-        }
-      }
-
-      // Restore terminal settings on *nix
-      if (DIRECTORY_SEPARATOR !== '\\') {
-        system('stty sane');
-      }
-
-      // Cleanup
-      fclose($stdin);
+      $this->getService('utils/misc')->printDataTable("Workflows List", $getRows, $columns, $args);
     });
 
     $this->addCommand('workflows:create', function () {
@@ -209,123 +106,20 @@ class Commands extends Cli
     });
 
     $this->addCommand('steps:list', function (array $args) {
-      // Base hints
-      $helper     = $this->getService('utils/clihelper');
-      $stepSvc = $this->getService('bpm/step');
+      $getRows = function ($params) {
+        return $this->getService('bpm/step')->list($params);
+      };
 
-      // Extract and normalize our options
-      $limit   = isset($args['--limit']) ? (int)$args['--limit'] : 10;
-      $sortBy  = $args['--sort-by']         ?? null;
-      $sortDir = $args['--sort-direction']  ?? 'ASC';
-      unset($args['--limit'], $args['--sort-by'], $args['--sort-direction']);
+      $columns = [
+        'id_bpm_step'              => 'ID',
+        'ds_title'                 => 'Title',
+        'nr_step_order'            => 'Order',
+        'do_is_terminal'           => 'Is Terminal',
+        'ds_tag'                   => 'Tag',
+        'workflowTitle'            => 'Workflow',
+      ];
 
-      $page = isset($args['--page']) ? (int)$args['--page'] : 1;
-      unset($args['--page']);
-
-      // --- <== HERE: open STDIN in BLOCKING mode (no stream_set_blocking) ===>
-      $stdin = fopen('php://stdin', 'r');
-
-      // on *nix, disable line buffering & echo
-      if (DIRECTORY_SEPARATOR !== '\\') {
-        system('stty -icanon -echo');
-      }
-
-      $exit = false;
-      while (! $exit) {
-        // Clear screen + move cursor home
-        if (DIRECTORY_SEPARATOR === '\\') {
-          system('cls');
-        } else {
-          echo "\033[2J\033[H";
-        }
-
-        // Header & hints
-        Utils::printLn($helper->ansi("Welcome to the BPM Steps List Command!\n", 'color: cyan; font-weight: bold'));
-        Utils::printLn("HINTS:");
-        Utils::printLn("  • --limit={$limit}   (items/page)");
-        Utils::printLn("  • --sort-by={$sortBy}   --sort-direction={$sortDir}");
-        if (DIRECTORY_SEPARATOR === '\\') {
-          Utils::printLn("  • Press 'n' = next page, 'p' = previous page, 'q' = quit");
-        } else {
-          Utils::printLn("  • ←/→ arrows to navigate pages, 'q' to quit");
-        }
-        Utils::printLn("  • Press 'ctrl+c' to exit at any time");
-        Utils::printLn();
-
-        // Fetch & render
-        $params = array_merge($args, [
-          '$limit' => $limit,
-          '$limit_multiplier' => 1, // No multiplier for pagination
-          '$page'  => $page,
-        ]);
-        if ($sortBy) {
-          $params['$sort_by']        = $sortBy;
-          $params['$sort_direction'] = $sortDir;
-        }
-
-        $rows = $stepSvc->list($params);
-
-        if (empty($rows)) {
-          Utils::printLn("  >> No steps found on page {$page}.");
-        } else {
-          Utils::printLn(" Page {$page} — showing " . count($rows) . " items");
-          Utils::printLn(str_repeat('─', 60));
-          $helper->table($rows, [
-            'id_bpm_step'              => 'ID',
-            'ds_title'                 => 'Title',
-            'nr_step_order'            => 'Order',
-            'do_is_terminal'           => 'Is Terminal',
-            'ds_tag'                   => 'Tag',
-            'workflowTitle'            => 'Workflow',
-          ]);
-        }
-
-        // --- <== HERE: wait for exactly one keypress, blocking until you press ===>
-        $c = fgetc($stdin);
-        if (DIRECTORY_SEPARATOR === '\\') {
-          $input = strtolower($c);
-        } else {
-          if ($c === "\033") {             // arrow keys start with ESC
-            $input = $c . fgetc($stdin) . fgetc($stdin);
-          } else {
-            $input = $c;
-          }
-        }
-
-        // Handle navigation
-        if (DIRECTORY_SEPARATOR === '\\') {
-          switch ($input) {
-            case 'n':
-              $page++;
-              break;
-            case 'p':
-              $page = max(1, $page - 1);
-              break;
-            case 'q':
-              $exit = true;
-              break;
-          }
-        } else {
-          switch ($input) {
-            case "\033[C": // →
-              $page++;
-              break;
-            case "\033[D": // ←
-              $page = max(1, $page - 1);
-              break;
-            case 'q':
-              $exit = true;
-              break;
-          }
-        }
-      }
-
-      // restore normal terminal behavior
-      if (DIRECTORY_SEPARATOR !== '\\') {
-        system('stty sane');
-      }
-      // Cleanup
-      fclose($stdin);
+      $this->getService('utils/misc')->printDataTable("Steps List", $getRows, $columns, $args);
     });
 
     $this->addCommand('steps:create', function () {
@@ -365,123 +159,20 @@ class Commands extends Cli
     });
 
     $this->addCommand('transitions:list', function (array $args) {
-      // Base hints
-      $helper     = $this->getService('utils/clihelper');
-      $transitionSvc = $this->getService('bpm/transition');
+      $getRows = function ($params) {
+        return $this->getService('bpm/transition')->list($params);
+      };
 
-      // Extract and normalize our options
-      $limit   = isset($args['--limit']) ? (int)$args['--limit'] : 10;
-      $sortBy  = $args['--sort-by']         ?? null;
-      $sortDir = $args['--sort-direction']  ?? 'ASC';
-      unset($args['--limit'], $args['--sort-by'], $args['--sort-direction']);
+      $columns = [
+        'id_bpm_transition'        => 'ID',
+        'ds_title'                 => 'Title',
+        'ds_icon'                  => 'Icon',
+        'stepOrigin'               => 'Step Origin',
+        'stepDestination'          => 'Step Destination',
+        'workflowTitle'            => 'Workflow',
+      ];
 
-      $page = isset($args['--page']) ? (int)$args['--page'] : 1;
-      unset($args['--page']);
-
-      // --- <== HERE: open STDIN in BLOCKING mode (no stream_set_blocking) ===>
-      $stdin = fopen('php://stdin', 'r');
-
-      // on *nix, disable line buffering & echo
-      if (DIRECTORY_SEPARATOR !== '\\') {
-        system('stty -icanon -echo');
-      }
-
-      $exit = false;
-      while (! $exit) {
-        // Clear screen + move cursor home
-        if (DIRECTORY_SEPARATOR === '\\') {
-          system('cls');
-        } else {
-          echo "\033[2J\033[H";
-        }
-
-        // Header & hints
-        Utils::printLn($helper->ansi("Welcome to the BPM Transitions List Command!\n", 'color: cyan; font-weight: bold'));
-        Utils::printLn("HINTS:");
-        Utils::printLn("  • --limit={$limit}   (items/page)");
-        Utils::printLn("  • --sort-by={$sortBy}   --sort-direction={$sortDir}");
-        if (DIRECTORY_SEPARATOR === '\\') {
-          Utils::printLn("  • Press 'n' = next page, 'p' = previous page, 'q' = quit");
-        } else {
-          Utils::printLn("  • ←/→ arrows to navigate pages, 'q' to quit");
-        }
-        Utils::printLn("  • Press 'ctrl+c' to exit at any time");
-        Utils::printLn();
-
-        // Fetch & render
-        $params = array_merge($args, [
-          '$limit' => $limit,
-          '$limit_multiplier' => 1, // No multiplier for pagination
-          '$page'  => $page,
-        ]);
-        if ($sortBy) {
-          $params['$sort_by']        = $sortBy;
-          $params['$sort_direction'] = $sortDir;
-        }
-
-        $rows = $transitionSvc->list($params);
-
-        if (empty($rows)) {
-          Utils::printLn("  >> No transitions found on page {$page}.");
-        } else {
-          Utils::printLn(" Page {$page} — showing " . count($rows) . " items");
-          Utils::printLn(str_repeat('─', 60));
-          $helper->table($rows, [
-            'id_bpm_transition'        => 'ID',
-            'ds_title'                 => 'Title',
-            'ds_icon'                   => 'Icon',
-            'stepOrigin'                => 'Step Origin',
-            'stepDestination'           => 'Step Destination',
-            'workflowTitle'            => 'Workflow',
-          ]);
-        }
-
-        // --- <== HERE: wait for exactly one keypress, blocking until you press ===>
-        $c = fgetc($stdin);
-        if (DIRECTORY_SEPARATOR === '\\') {
-          $input = strtolower($c);
-        } else {
-          if ($c === "\033") {             // arrow keys start with ESC
-            $input = $c . fgetc($stdin) . fgetc($stdin);
-          } else {
-            $input = $c;
-          }
-        }
-
-        // Handle navigation
-        if (DIRECTORY_SEPARATOR === '\\') {
-          switch ($input) {
-            case 'n':
-              $page++;
-              break;
-            case 'p':
-              $page = max(1, $page - 1);
-              break;
-            case 'q':
-              $exit = true;
-              break;
-          }
-        } else {
-          switch ($input) {
-            case "\033[C": // →
-              $page++;
-              break;
-            case "\033[D": // ←
-              $page = max(1, $page - 1);
-              break;
-            case 'q':
-              $exit = true;
-              break;
-          }
-        }
-      }
-
-      // restore normal terminal behavior
-      if (DIRECTORY_SEPARATOR !== '\\') {
-        system('stty sane');
-      }
-      // Cleanup
-      fclose($stdin);
+      $this->getService('utils/misc')->printDataTable("Transitions List", $getRows, $columns, $args);
     });
 
     $this->addCommand('transitions:create', function () {
