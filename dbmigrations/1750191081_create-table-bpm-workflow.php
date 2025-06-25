@@ -9,7 +9,7 @@ class CreateTableBpmWorkflow extends Migration
 {
   public function apply()
   {
-    $this->Table('BPM_WORKFLOW')
+    $this->Table('BPM_WORKFLOW', 'BPM Workflow')
       ->id('id_bpm_workflow')
       ->string('ds_key', 17)
       ->string('do_active', 1)->setDefaultValue('Y')

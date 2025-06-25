@@ -7,7 +7,7 @@ use SplitPHP\Database\DbVocab;
 
 class CreateTableBpmStepTracking extends Migration{
   public function apply(){
-    $this->Table('BPM_STEP_TRACKING')
+    $this->Table('BPM_STEP_TRACKING', 'BPM Step Tracking')
       ->id('id_bpm_step_tracking')
       ->datetime('dt_track')->setDefaultValue(DbVocab::SQL_CURTIMESTAMP())
       ->int('id_bpm_execution')

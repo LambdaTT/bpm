@@ -8,7 +8,7 @@ use SplitPHP\Database\DbVocab;
 class CreateTableBpmStep extends Migration{
   public function apply()
   {
-    $this->Table('BPM_STEP')
+    $this->Table('BPM_STEP', 'BPM Step')
       ->id('id_bpm_step')
       ->string('ds_key', 17)
       ->string('do_active', 1)->setDefaultValue('Y')
