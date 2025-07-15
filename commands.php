@@ -8,7 +8,7 @@ use SplitPHP\Database\Dao;
 
 class Commands extends Cli
 {
-  public function init()
+  public function init(): void
   {
     $this->addCommand('workflows:list', function (array $args) {
       $getRows = function ($params) {

@@ -7,7 +7,7 @@ use SplitPHP\WebService;
 class Bpm extends WebService
 {
 
-  public function init()
+  public function init(): void
   {
     $this->setAntiXsrfValidation(false);
 
