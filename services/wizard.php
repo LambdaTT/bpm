@@ -5,6 +5,7 @@ namespace BPM\Services;
 use Exception;
 use SplitPHP\Service;
 use SplitPHP\Database\Dao;
+use SplitPHP\Exceptions\FailedValidation;
 
 class Wizard extends Service
 {
@@ -28,7 +29,7 @@ class Wizard extends Service
       ->find(
         "SELECT *
           FROM `BPM_TRANSITION`
-          WHERE (id_step_origin = ?id_bpm_step_current? OR id_step_origin IS NULL)
+          WHERE (id_bpm_step_origin = ?id_bpm_step_current? OR id_bpm_step_origin IS NULL)
           AND id_bpm_workflow = ?id_bpm_workflow?
         "
       );
@@ -45,12 +46,9 @@ class Wizard extends Service
       throw new Exception("There's no workflow with the tag: " . $workflowTag);
     }
 
-    $loggedUser = $this->getService('iam/session')->getLoggedUser();
-
     //Inicia um novo Workflow (execution) baseado no ID e preenche suas informações:
     $data['id_bpm_workflow'] = $workflow->id_bpm_workflow;
     $data['ds_key'] = 'exe-' . uniqid();
-    $data['id_iam_user_created'] = $loggedUser ? $loggedUser->id_iam_user : null;
     $data['ds_reference_entity_name'] = $workflow->ds_reference_entity_name;
     $data['id_reference_entity_id'] = $referenceEntityID;
 
@@ -83,33 +81,33 @@ class Wizard extends Service
     $validatedDestiny = false;
 
     foreach ($workflowSteps as $value) {
-      if ($value->id_bpm_step == $transition->id_step_origin || $transition->id_step_origin == null) {
+      if ($value->id_bpm_step == $transition->id_bpm_step_origin || $transition->id_bpm_step_origin == null) {
         $validatedOrigin = true;
       }
-      if ($value->id_bpm_step == $transition->id_step_destiny) {
+      if ($value->id_bpm_step == $transition->id_bpm_step_destination) {
         $validatedDestiny = true;
       }
     }
 
     if ($validatedOrigin != true || $validatedDestiny != true) {
-      throw new Exception("O step de origem e/ou de destino da transição não pertence ao workflow identificado", VALIDATION_FAILED);
+      throw new FailedValidation("O step de origem e/ou de destino da transição não pertence ao workflow identificado");
     }
 
     //Verificando se a Etapa de origem da transição é a mesma que a etapa atual da execução:
-    if ($transition->id_step_origin != $execution->id_bpm_step_current && $transition->id_step_origin != null) {
-      throw new Exception("Não foi possível passar para a próxima etapa pois a Etapa de origem da transição não é igual à etapa atual da execução (transição:" . $transition->id_step_origin . ", execução:" . $execution->id_bpm_step_current . ")", VALIDATION_FAILED);
+    if ($transition->id_bpm_step_origin != $execution->id_bpm_step_current && $transition->id_bpm_step_origin != null) {
+      throw new FailedValidation("Não foi possível passar para a próxima etapa pois a Etapa de origem da transição não é igual à etapa atual da execução (transição:" . $transition->id_bpm_step_origin . ", execução:" . $execution->id_bpm_step_current . ")");
     }
 
     $currentStep = $this->getService('bpm/step')->get(['id_bpm_step' => $execution->id_bpm_step_current]);
 
     if (empty($currentStep)) throw new Exception("Current step is invalid.");
 
-    if ($currentStep->do_is_terminal === 'Y') throw new Exception("O processo já está finalizado.", VALIDATION_FAILED);
+    if ($currentStep->do_is_terminal === 'Y') throw new FailedValidation("O processo já está finalizado.");
 
     // Executa as regras de transição:
     eval($transition->tx_rules);
 
-    $this->updExecutionStep($executionKey, $transition->id_step_destiny);
+    $this->updExecutionStep($executionKey, $transition->id_bpm_step_destination);
   }
 
   public function updExecutionStep($executionKey, $newStepId = null)
@@ -152,7 +150,6 @@ class Wizard extends Service
     $this->getDao('BPM_EXECUTION')
       ->filter('ds_key')->equalsTo($executionKey)
       ->update([
-        'id_iam_user_updated' => $loggedUser ? $loggedUser->id_iam_user : null,
         'dt_updated' => date('Y-m-d H:i:s'),
         'id_bpm_step_current' => $newStepId,
       ]);

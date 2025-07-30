@@ -3,6 +3,7 @@
 namespace BPM\Routes;
 
 use SplitPHP\WebService;
+use SplitPHP\Exceptions\Unauthorized;
 
 class Bpm extends WebService
 {
@@ -13,13 +14,7 @@ class Bpm extends WebService
 
     //------------- Available Transitions Endpoint -------------//
     $this->addEndpoint('GET', '/v1/available-transitions/?executionKey?', function ($input) {
-      // Validate User Login: 
-      if (!$this->getService('iam/session')->authenticate()) {
-        return $this->response->withStatus(401);
-      }
-
-      // Validate permissions:
-      $this->getService('iam/permission')->validatePermissions([
+      $this->auth([
         'BPM_EXECUTION' => 'R',
         'BPM_STEP' => 'R',
         'BPM_TRANSITION' => 'R',
@@ -37,13 +32,7 @@ class Bpm extends WebService
 
     //------------- Transition / First Step -------------//
     $this->addEndpoint('PUT', '/v1/transition/?executionKey?/?transitionKey?', function ($input) {
-      // Validate User Login: 
-      if (!$this->getService('iam/session')->authenticate()) {
-        return $this->response->withStatus(401);
-      }
-
-      // Validate permissions:
-      $this->getService('iam/permission')->validatePermissions([
+      $this->auth([
         'BPM_EXECUTION' => 'U',
       ]);
 
@@ -55,14 +44,8 @@ class Bpm extends WebService
     });
 
     //------------- BPM STEP TRACKING Record -------------//
-    $this->addEndpoint('GET', '/v1/trackrecord/?executionKey?', function ($input) {
-      // Validate User Login: 
-      if (!$this->getService('iam/session')->authenticate()) {
-        return $this->response->withStatus(401);
-      }
-
-      // Validate permissions:
-      $this->getService('iam/permission')->validatePermissions([
+    $this->addEndpoint('GET', '/v1/step-tracking/?executionKey?', function ($input) {
+      $this->auth([
         'BPM_STEP' => 'R',
         'BPM_STEP_TRACKING' => 'R',
       ]);
@@ -86,13 +69,7 @@ class Bpm extends WebService
 
     //------------- BPM Step details -------------//
     $this->addEndpoint('GET', '/v1/step/?stepKey?', function ($input) {
-      // Validate User Login: 
-      if (!$this->getService('iam/session')->authenticate()) {
-        return $this->response->withStatus(401);
-      }
-
-      // Validate permissions:
-      $this->getService('iam/permission')->validatePermissions([
+      $this->auth([
         'BPM_STEP' => 'R',
       ]);
 
@@ -106,14 +83,8 @@ class Bpm extends WebService
     });
 
     //------------- BPM Step List -------------//
-    $this->addEndpoint('GET', '/v1/bpm/step', function ($input) {
-      // Validate User Login: 
-      if (!$this->getService('iam/session')->authenticate()) {
-        return $this->response->withStatus(401);
-      }
-
-      // Validate permissions:
-      $this->getService('iam/permission')->validatePermissions([
+    $this->addEndpoint('GET', '/v1/step', function ($input) {
+      $this->auth([
         'BPM_STEP' => 'R',
       ]);
 
@@ -125,5 +96,18 @@ class Bpm extends WebService
         ->withStatus(200)
         ->withData($data);
     });
+  }
+
+  private function auth(array $permissions)
+  {
+    if (!$this->getService('modcontrol/control')->moduleExists('iam')) return;
+
+    // Auth user login:
+    if (!$this->getService('iam/session')->authenticate())
+      throw new Unauthorized("Não autorizado.");
+
+    // Validate user permissions:
+    $this->getService('iam/permission')
+      ->validatePermissions($permissions);
   }
 }

@@ -14,7 +14,7 @@ class CreateTableBpmExecution extends Migration{
       ->datetime('dt_created')->setDefaultValue(DbVocab::SQL_CURTIMESTAMP())
       ->datetime('dt_updated')->nullable()->setDefaultValue(null)
       ->int('id_bpm_workflow')
-      ->int('id_bpm_step_current')
+      ->int('id_bpm_step_current')->nullable()->setDefaultValue(null)
       ->string('ds_reference_entity_name', 60)
       ->int('id_reference_entity_id')
       ->Index('KEY', DbVocab::IDX_UNIQUE)->onColumn('ds_key')
