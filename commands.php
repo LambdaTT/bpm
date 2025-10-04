@@ -360,8 +360,8 @@ class Commands extends Cli
           'label' => 'Is the step terminal (\'Y\' or \'N\')?',
           'default' => 'N',
         ],
-        'ds_color' => [
-          'label' => 'Step Color (Coloring HTML-class)',
+        'ds_style' => [
+          'label' => 'Step Style (Styling HTML-classes)',
           'required' => false,
           'length' => 255,
         ],
