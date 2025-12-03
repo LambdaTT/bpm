@@ -16,12 +16,12 @@ class CreateTableBpmTransition extends Migration{
       ->string('ds_title', 60)
       ->string('ds_icon', 60)->nullable()->setDefaultValue(null)
       ->int('id_bpm_workflow')
-      ->int('id_bpm_step_origin')
+      ->int('id_bpm_step_origin')->nullable()->setDefaultValue(null)
       ->int('id_bpm_step_destination')
       ->text('tx_rules')->nullable()->setDefaultValue(null)
       ->Index('KEY', DbVocab::IDX_UNIQUE)->onColumn('ds_key')
       ->Foreign('id_bpm_workflow')->references('id_bpm_workflow')->atTable('BPM_WORKFLOW')->onUpdate(DbVocab::FKACTION_CASCADE)->onDelete(DbVocab::FKACTION_CASCADE)
-      ->Foreign('id_bpm_step_origin')->references('id_bpm_step')->atTable('BPM_STEP')->onUpdate(DbVocab::FKACTION_CASCADE)->onDelete(DbVocab::FKACTION_CASCADE)
+      ->Foreign('id_bpm_step_origin')->references('id_bpm_step')->atTable('BPM_STEP')->onUpdate(DbVocab::FKACTION_CASCADE)->onDelete(DbVocab::FKACTION_SETNULL)
       ->Foreign('id_bpm_step_destination')->references('id_bpm_step')->atTable('BPM_STEP')->onUpdate(DbVocab::FKACTION_CASCADE)->onDelete(DbVocab::FKACTION_CASCADE);
   }
 }
