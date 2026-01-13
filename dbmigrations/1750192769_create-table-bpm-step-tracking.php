@@ -10,8 +10,8 @@ class CreateTableBpmStepTracking extends Migration{
     $this->Table('BPM_STEP_TRACKING', 'BPM Step Tracking')
       ->id('id_bpm_step_tracking')
       ->datetime('dt_track')->setDefaultValue(DbVocab::SQL_CURTIMESTAMP())
-      ->int('id_bpm_execution')
-      ->int('id_bpm_step')->nullable()
+      ->fk('id_bpm_execution')->unsigned()
+      ->fk('id_bpm_step')->unsigned()->nullable()->setDefaultValue(null)
       ->Foreign('id_bpm_execution')->references('id_bpm_execution')->atTable('BPM_EXECUTION')->onUpdate(DbVocab::FKACTION_CASCADE)->onDelete(DbVocab::FKACTION_CASCADE)
       ->Foreign('id_bpm_step')->references('id_bpm_step')->atTable('BPM_STEP')->onUpdate(DbVocab::FKACTION_CASCADE)->onDelete(DbVocab::FKACTION_SETNULL);
   }

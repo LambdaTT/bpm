@@ -21,7 +21,7 @@ class CreateTableBpmStep extends Migration{
       ->string('do_is_terminal', 1)->setDefaultValue('N')
       ->string('ds_style', 255)->nullable()->setDefaultValue(null)
       ->string('ds_tag', 60)->nullable()->setDefaultValue(null)
-      ->int('id_bpm_workflow')
+      ->fk('id_bpm_workflow')->unsigned()
       ->Index('KEY', DbVocab::IDX_UNIQUE)->onColumn('ds_key')
       ->Foreign('id_bpm_workflow')->references('id_bpm_workflow')->atTable('BPM_WORKFLOW')->onUpdate(DbVocab::FKACTION_CASCADE)->onDelete(DbVocab::FKACTION_CASCADE);
   }
