@@ -13,7 +13,8 @@ class Step extends Service
       ->find(
         "SELECT 
             stp.*, 
-            wfl.ds_title AS workflowTitle
+            wfl.ds_title AS workflowTitle,
+            wfl.ds_tag AS workflowTag
           FROM `BPM_STEP` stp
           LEFT JOIN `BPM_WORKFLOW` wfl ON wfl.id_bpm_workflow = stp.id_bpm_workflow"
       );
