@@ -148,7 +148,7 @@ class Wizard extends Service
 
     // Executa as regras de saída (tx_out_rules):
     if (!empty($currentStep->tx_out_rules)) {
-      eval($currentStep->tx_out_rules);
+      $this->executeRules($currentStep->tx_out_rules, $execution);
     }
     $loggedUser = $this->getService('iam/session')->getLoggedUser();
     //Atualiza o step atual para o ID do step novo:
@@ -164,7 +164,7 @@ class Wizard extends Service
 
     // Executa as Regras de Entrada no novo step:
     if (!empty($newStep->tx_in_rules)) {
-      eval($newStep->tx_in_rules);
+      $this->executeRules($newStep->tx_in_rules, $execution);
     }
 
     return $newStep;
@@ -175,5 +175,19 @@ class Wizard extends Service
     return $this->getDao('BPM_EXECUTION')
       ->bindParams($params)
       ->delete();
+  }
+
+  /**
+   * Executes one or more rules in "service/path::method" format.
+   * Multiple rules can be separated by commas.
+   */
+  private function executeRules(string $rulesStr, $context = null): void
+  {
+    foreach (explode(',', $rulesStr) as $rule) {
+      $rule = trim($rule);
+      if (empty($rule)) continue;
+      [$servicePath, $methodName] = explode('::', $rule, 2);
+      $this->getService(trim($servicePath))->{trim($methodName)}($context);
+    }
   }
 }
