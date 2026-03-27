@@ -75,21 +75,20 @@ class Wizard extends Service
       ->filter('id_bpm_workflow')->equalsTo($execution->id_bpm_workflow)
       ->find();
 
-
     //Verificação Step Origin
     $validatedOrigin = false;
     $validatedDestiny = false;
 
-    foreach ($workflowSteps as $value) {
-      if ($value->id_bpm_step == $transition->id_bpm_step_origin || $transition->id_bpm_step_origin == null) {
-        $validatedOrigin = true;
-      }
-      if ($value->id_bpm_step == $transition->id_bpm_step_destination) {
-        $validatedDestiny = true;
-      }
+    foreach ($workflowSteps as $step) {
+      $isTransitionOrigin = $step->id_bpm_step == $transition->id_bpm_step_origin;
+      $transitionOriginIsNull = $transition->id_bpm_step_origin == null;
+      $validatedOrigin = $validatedOrigin || $isTransitionOrigin || $transitionOriginIsNull;
+
+      $isTransitionDestiny = $step->id_bpm_step == $transition->id_bpm_step_destination;
+      $validatedDestiny = $validatedDestiny || $isTransitionDestiny;
     }
 
-    if ($validatedOrigin != true || $validatedDestiny != true) {
+    if (!$validatedOrigin || !$validatedDestiny) {
       throw new FailedValidation("O step de origem e/ou de destino da transição não pertence ao workflow identificado");
     }
 
@@ -104,8 +103,14 @@ class Wizard extends Service
 
     if ($currentStep->do_is_terminal === 'Y') throw new FailedValidation("O processo já está finalizado.");
 
-    // Executa as regras de transição:
-    eval($transition->tx_rules);
+    if (!empty($transition->tx_rules)) {
+      $rules = explode("::", $transition->tx_rules);
+      $service = $this->getService($rules[0]);
+      $methodName = $rules[1];
+
+      // Executa as regras de transição:
+      $service->$methodName($execution);
+    }
 
     $this->updExecutionStep($executionKey, $transition->id_bpm_step_destination);
   }
