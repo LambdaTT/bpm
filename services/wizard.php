@@ -115,6 +115,29 @@ class Wizard extends Service
     $this->updExecutionStep($executionKey, $transition->id_bpm_step_destination);
   }
 
+
+  /**
+   * Dispara uma transição buscando pelo ds_tag dentro do workflow da execução.
+   * Útil para disparar transições programaticamente sem conhecer o ds_key gerado.
+   */
+  public function transitionByTag($executionKey, $transitionTag)
+  {
+    $execution = $this->getDao('BPM_EXECUTION')
+      ->filter('ds_key')->equalsTo($executionKey)
+      ->first();
+
+    $transition = $this->getService('bpm/transition')->get([
+      'ds_tag'         => $transitionTag,
+      'id_bpm_workflow' => $execution->id_bpm_workflow,
+    ]);
+
+    if (empty($transition)) {
+      throw new Exception("Transição com tag '{$transitionTag}' não encontrada no workflow.");
+    }
+
+    $this->transition($executionKey, $transition->ds_key);
+  }
+
   public function updExecutionStep($executionKey, $newStepId = null)
   {
 
