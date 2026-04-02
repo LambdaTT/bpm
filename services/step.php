@@ -35,16 +35,22 @@ class Step extends Service
         "SELECT
           trk.*,
           DATE_FORMAT(trk.dt_track, '%d/%m/%Y %T') as dtTracking,
-          stp.ds_title as stepName
+          stp.ds_title as stepName,
+          stp.ds_tag as stepTag,
+          CONCAT(usr.ds_first_name, ' ', usr.ds_last_name) as userName
         FROM BPM_STEP_TRACKING trk
-        JOIN BPM_STEP stp ON trk.id_bpm_step = stp.id_bpm_step"
+        JOIN BPM_STEP stp ON trk.id_bpm_step = stp.id_bpm_step
+        LEFT JOIN IAM_USER usr ON usr.id_iam_user = trk.id_iam_user
+        ORDER BY trk.dt_track ASC"
       );
   }
 
   public function track($executionId, $stepId)
   {
     $data['id_bpm_execution'] = $executionId;
-    $data['id_bpm_step'] = $stepId;
+    $data['id_bpm_step']      = $stepId;
+    if ($this->getService('modcontrol/control')->moduleExists('iam'))
+      $data['id_iam_user'] = $this->getService('iam/session')->getLoggedUser()?->id_iam_user;
 
     return $this->getDao('BPM_STEP_TRACKING')->insert($data);
   }
