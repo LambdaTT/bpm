@@ -9,6 +9,8 @@ use SplitPHP\Exceptions\FailedValidation;
 
 class Wizard extends Service
 {
+  private array $executedTransitions = [];
+
   public function availableTransitions($executionKey)
   {
     //Identifica a Etapa da execução atual usando executionKey:
@@ -35,7 +37,7 @@ class Wizard extends Service
       );
   }
 
-  public function startWorkflow($workflowTag, $referenceEntityID)
+  public function startWorkflow($workflowTag, $referenceEntityID, $startOrder = null)
   {
     //Capta as informações do Workflow:
     $workflow = $this->getDao('BPM_WORKFLOW')
@@ -57,8 +59,21 @@ class Wizard extends Service
 
     Dao::flush();
 
+    // Determina o step inicial: pelo nr_step_order fornecido ou o primeiro do workflow.
+    $startStepId = null;
+    if ($startOrder !== null) {
+      $startStep = $this->getDao('BPM_STEP')
+        ->filter('id_bpm_workflow')->equalsTo($workflow->id_bpm_workflow)
+        ->and('nr_step_order')->equalsTo($startOrder)
+        ->first();
+      if (empty($startStep)) {
+        throw new Exception("No step with nr_step_order={$startOrder} found in workflow '{$workflowTag}'.");
+      }
+      $startStepId = $startStep->id_bpm_step;
+    }
+
     //Chama a função updExecutionStep para dar o primeiro passo:
-    $newExec->id_bpm_step_current = $this->updExecutionStep($data['ds_key'])->id_bpm_step;
+    $newExec->id_bpm_step_current = $this->updExecutionStep($data['ds_key'], $startStepId)->id_bpm_step;
 
     //Retorna o Objeto com os dados que acabaram de ser inseridos:
     return $newExec;
@@ -66,6 +81,10 @@ class Wizard extends Service
 
   public function transition($executionKey, $transitionKey)
   {
+    $trnHash = hash('sha256', "{$executionKey}-{$transitionKey}");
+    if (in_array($trnHash, $this->executedTransitions)) return;
+    $this->executedTransitions[] = $trnHash;
+
     //Pegando as informações necessárias:
     $transition = $this->getService('bpm/transition')->get(['ds_key' => $transitionKey]);
     $execution = $this->getDao('BPM_EXECUTION')
@@ -114,7 +133,6 @@ class Wizard extends Service
 
     $this->updExecutionStep($executionKey, $transition->id_bpm_step_destination);
   }
-
 
   /**
    * Dispara uma transição buscando pelo ds_tag dentro do workflow da execução.
