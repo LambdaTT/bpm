@@ -2,6 +2,7 @@
 
 namespace BPM\Services;
 
+use SplitPHP\ModsManager;
 use SplitPHP\Service;
 
 class Step extends Service
@@ -49,7 +50,7 @@ class Step extends Service
   {
     $data['id_bpm_execution'] = $executionId;
     $data['id_bpm_step']      = $stepId;
-    if ($this->getService('modcontrol/control')->moduleExists('iam'))
+    if (ModsManager::modExists('iam'))
       $data['id_iam_user'] = $this->getService('iam/session')->getLoggedUser()?->id_iam_user;
 
     return $this->getDao('BPM_STEP_TRACKING')->insert($data);

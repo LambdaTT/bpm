@@ -4,6 +4,7 @@ namespace BPM\Routes;
 
 use SplitPHP\WebService;
 use SplitPHP\Exceptions\Unauthorized;
+use SplitPHP\ModsManager;
 
 class Bpm extends WebService
 {
@@ -126,7 +127,7 @@ class Bpm extends WebService
 
   private function auth(array $permissions)
   {
-    if (!$this->getService('modcontrol/control')->moduleExists('iam')) return;
+    if (!ModsManager::modExists('iam')) return;
 
     // Auth user login:
     if (!$this->getService('iam/session')->authenticate())
